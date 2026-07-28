@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>inDrive hero slogan builder</title>
+<script src="html2canvas.min.js"></script>
+<style>
+@font-face{font-family:'PP Agrandir';src:url(https://indstatic.io/indstatic-main/fonts/agrandir/PPAgrandir-Bold.woff2) format('woff2');font-weight:700;font-display:block;}
+@font-face{font-family:'Suisse Intl';src:url(https://indstatic.io/indstatic-main/fonts/suisse/SuisseIntl-Book.woff2) format('woff2');font-weight:400;font-display:block;}
+@font-face{font-family:'Suisse Intl';src:url(https://indstatic.io/indstatic-main/fonts/suisse/SuisseIntl-Semibold.woff2) format('woff2');font-weight:600;font-display:block;}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  padding: 40px 20px;
+  background: #f5f5f6;
+  font-family: 'Suisse Intl', -apple-system, sans-serif;
+  color: #141414;
+  display: flex;
+  justify-content: center;
+}
+.wrap { width: 100%; max-width: 720px; }
+h1 { font-size: 18px; font-weight: 600; margin: 0 0 20px; }
+
+.toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+.group { display: flex; gap: 4px; }
+button {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 14px;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #141414;
+  cursor: pointer;
+}
+button:hover { background: #f0f0f0; }
+.btn-primary { background: #c1f11d; border-color: #c1f11d; }
+.btn-primary:hover { background: #9dd90d; border-color: #9dd90d; }
+button.active { background: #141414; color: #fff; border-color: #141414; }
+button.icon-btn { width: 40px; padding: 0; }
+button:disabled { opacity: 0.5; cursor: default; }
+
+#capture {
+  background: #141414;
+  border-radius: 16px;
+  padding: 60px 48px;
+  transition: background 0.15s;
+}
+#capture.light {
+  background: #ffffff;
+}
+#hero {
+  font-family: 'PP Agrandir', 'Suisse Intl', sans-serif;
+  font-weight: 700;
+  font-size: 48px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  outline: none;
+  margin: 0;
+  text-align: left;
+  transition: color 0.15s;
+}
+#capture.light #hero {
+  color: #141414;
+}
+#hero p { margin: 0; }
+mark.highlight {
+  color: #141414;
+  background-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg width='3160' height='680' fill='none' xmlns='http://www.w3.org/2000/svg' preserveAspectRatio%3D%27none%27%3E%3Cpath d='M3144.1 255.29C2623.07 289.686 1136.18 240 74.2536 240C579.532 297.926 2067.73 428.579 3118.85 428.579C2794.51 425.847 1586.73 455.592 4.10173 428.579' stroke='%23C1F11D' stroke-width='480'/%3E%3C/svg%3E");
+  background-position: 50%;
+  background-repeat: no-repeat;
+  background-size: 100% 80%;
+  padding: 0 8px;
+}
+p.hint { font-size: 13px; color: #6a6b6e; margin: 16px 0 6px; }
+textarea {
+  width: 100%;
+  height: 90px;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  resize: vertical;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+.actions { display: flex; gap: 8px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>inDrive hero slogan builder</h1>
+
+  <div class="toolbar">
+    <div class="group">
+      <button class="theme-btn active" data-theme="dark">Dark</button>
+      <button class="theme-btn" data-theme="light">Light</button>
+    </div>
+    <div class="group" style="margin-left:auto;">
+      <button class="align-btn icon-btn active" data-align="left" title="Align left">L</button>
+      <button class="align-btn icon-btn" data-align="center" title="Align center">C</button>
+      <button class="align-btn icon-btn" data-align="right" title="Align right">R</button>
+    </div>
+  </div>
+
+  <div id="capture">
+    <h2 id="hero" contenteditable="true" spellcheck="false"><p>Your ride.</p><p><mark class="highlight">Your price.</mark></p></h2>
+  </div>
+
+  <div class="toolbar" style="margin-top:12px;">
+    <button id="btn-mark">Mark selection</button>
+    <button id="btn-unmark">Remove mark</button>
+    <button id="btn-reset">Reset text</button>
+  </div>
+
+  <p class="hint">Select text above, click "Mark selection". This produces the exact markup below — copy it into the CMS.</p>
+  <textarea id="output" readonly></textarea>
+  <div class="actions">
+    <button id="btn-png" class="btn-primary">Download PNG</button>
+    <button id="btn-svg">Download SVG</button>
+    <button id="btn-copy">Copy HTML</button>
+  </div>
+
+  <p style="font-size:12px;color:#a0a0a0;text-align:center;margin:28px 0 0;">created by Sofia Tsytkina</p>
+</div>
+
+<script>
+(function(){
+  var hero = document.getElementById('hero');
+  var output = document.getElementById('output');
+  var capture = document.getElementById('capture');
+  var defaultHTML = hero.innerHTML;
+  var theme = 'dark';
+  document.execCommand('defaultParagraphSeparator', false, 'p');
+
+  function sync(){ output.value = hero.innerHTML.trim(); }
+
+  document.getElementById('btn-mark').addEventListener('mousedown', function(e){ e.preventDefault(); });
+  document.getElementById('btn-unmark').addEventListener('mousedown', function(e){ e.preventDefault(); });
+
+  document.getElementById('btn-mark').addEventListener('click', function(){
+    var sel = window.getSelection();
+    if(!sel.rangeCount || sel.isCollapsed) return;
+    var range = sel.getRangeAt(0);
+    var mark = document.createElement('mark');
+    mark.className = 'highlight';
+    try{
+      var contents = range.extractContents();
+      mark.appendChild(contents);
+      range.insertNode(mark);
+    }catch(err){}
+    sel.removeAllRanges();
+    sync();
+  });
+
+  document.getElementById('btn-unmark').addEventListener('click', function(){
+    var sel = window.getSelection();
+    if(!sel.rangeCount) return;
+    var node = sel.getRangeAt(0).commonAncestorContainer;
+    if(node.nodeType === 3) node = node.parentNode;
+    var mark = node.closest ? node.closest('mark.highlight') : null;
+    if(mark){
+      while(mark.firstChild) mark.parentNode.insertBefore(mark.firstChild, mark);
+      mark.parentNode.removeChild(mark);
+    }
+    sync();
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function(){
+    hero.innerHTML = defaultHTML;
+    sync();
+  });
+
+  document.getElementById('btn-copy').addEventListener('click', function(){
+    output.select();
+    try{ navigator.clipboard.writeText(output.value); }catch(err){ document.execCommand('copy'); }
+  });
+
+  var alignBtns = document.querySelectorAll('.align-btn');
+  alignBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      hero.style.textAlign = btn.getAttribute('data-align');
+      alignBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  var themeBtns = document.querySelectorAll('.theme-btn');
+  themeBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      theme = btn.getAttribute('data-theme');
+      capture.classList.toggle('light', theme === 'light');
+      themeBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+    });
+  });
+
+  function trimCanvas(canvas){
+    var ctx = canvas.getContext('2d');
+    var w = canvas.width, h = canvas.height;
+    var data = ctx.getImageData(0, 0, w, h).data;
+    var minX = w, minY = h, maxX = 0, maxY = 0;
+    for(var y = 0; y < h; y++){
+      for(var x = 0; x < w; x++){
+        var alpha = data[(y * w + x) * 4 + 3];
+        if(alpha > 10){
+          if(x < minX) minX = x;
+          if(x > maxX) maxX = x;
+          if(y < minY) minY = y;
+          if(y > maxY) maxY = y;
+        }
+      }
+    }
+    if(maxX < minX || maxY < minY) return canvas;
+    var pad = 4;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+    var tw = maxX - minX + 1, th = maxY - minY + 1;
+    var out = document.createElement('canvas');
+    out.width = tw; out.height = th;
+    out.getContext('2d').drawImage(canvas, minX, minY, tw, th, 0, 0, tw, th);
+    return out;
+  }
+
+  function getExportCanvas(){
+    return new Promise(function(resolve, reject){
+      var enlarge = 4;
+      var htmlCanvasScale = 2;
+      var originalRect = hero.getBoundingClientRect();
+      var originalWidth = originalRect.width;
+      var originalFontSize = parseFloat(getComputedStyle(hero).fontSize);
+      hero.style.width = (originalWidth * enlarge) + 'px';
+      hero.style.fontSize = (originalFontSize * enlarge) + 'px';
+
+      var done = false;
+      function cleanup(){
+        if(done) return;
+        done = true;
+        hero.style.width = '';
+        hero.style.fontSize = '';
+      }
+      var timeoutId = setTimeout(function(){
+        if(!done){ cleanup(); reject(new Error('timed out, please try again')); }
+      }, 15000);
+
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          document.fonts.ready.then(function(){
+            return html2canvas(hero, {backgroundColor: null, scale: htmlCanvasScale, useCORS: true});
+          }).then(function(canvas){
+            clearTimeout(timeoutId);
+            cleanup();
+            resolve(trimCanvas(canvas));
+          }).catch(function(err){
+            clearTimeout(timeoutId);
+            cleanup();
+            reject(err);
+          });
+        });
+      });
+    });
+  }
+
+  function runExport(btn, task){
+    btn.disabled = true;
+    var originalText = btn.textContent;
+    btn.textContent = 'Rendering...';
+    task().catch(function(err){
+      alert('Export failed: ' + err);
+    }).finally(function(){
+      btn.disabled = false;
+      btn.textContent = originalText;
+    });
+  }
+
+  document.getElementById('btn-png').addEventListener('click', function(){
+    var btn = this;
+    runExport(btn, function(){
+      return getExportCanvas().then(function(canvas){
+        var link = document.createElement('a');
+        link.download = 'indrive-slogan.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    });
+  });
+
+  document.getElementById('btn-svg').addEventListener('click', function(){
+    var btn = this;
+    runExport(btn, function(){
+      return getExportCanvas().then(function(canvas){
+        var w = canvas.width, h = canvas.height;
+        var pngDataUrl = canvas.toDataURL('image/png');
+        var svg = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+          '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">' +
+          '<image width="' + w + '" height="' + h + '" xlink:href="' + pngDataUrl + '"/></svg>';
+        var blob = new Blob([svg], {type: 'image/svg+xml'});
+        var url = URL.createObjectURL(blob);
+        var link = document.createElement('a');
+        link.download = 'indrive-slogan.svg';
+        link.href = url;
+        link.click();
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      });
+    });
+  });
+
+  hero.addEventListener('input', sync);
+  sync();
+})();
+</script>
+</body>
+</html>
